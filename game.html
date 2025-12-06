@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="vi">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trò Chơi Nối Hình Nghề Nghiệp</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Comic Sans MS', 'Chalkboard SE', 'Arial Rounded MT Bold', cursive, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      width: 100%;
+      height: 100%;
+      overflow-y: auto;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    .game-container {
+      width: 100%;
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      position: relative;
+    }
+
+    h1 {
+      color: #ffffff;
+      text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+      margin: 0 0 10px 0;
+      font-size: 2.5em;
+      text-align: center;
+    }
+
+    .instruction {
+      color: #ffffff;
+      font-size: 1.2em;
+      margin-bottom: 25px;
+      text-align: center;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .game-board {
+      display: flex;
+      justify-content: space-around;
+      align-items: flex-start;
+      gap: 60px;
+      width: 100%;
+      max-width: 1000px;
+      flex: 1;
+      position: relative;
+    }
+
+    .column {
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+      flex: 1;
+    }
+
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 15px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      position: relative;
+      border: 4px solid transparent;
+    }
+
+    .card:hover {
+      transform: translateY(-5px) scale(1.05);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+    }
+
+    .card.selected {
+      border-color: #ffd700;
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+    }
+
+    .card.matched {
+      opacity: 0.6;
+      pointer-events: none;
+      border-color: #4CAF50;
+    }
+
+    .card-image {
+      width: 100%;
+      max-width: 200px;
+      height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+
+    .card-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 12px;
+    }
+
+    .card-label {
+      font-size: 0.9em;
+      font-weight: bold;
+      color: #333;
+      text-align: center;
+      margin-top: 5px;
+    }
+
+    .connection-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .connection-line {
+      stroke: #4CAF50;
+      stroke-width: 4;
+      fill: none;
+      stroke-linecap: round;
+    }
+
+    .feedback {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 4em;
+      font-weight: bold;
+      padding: 40px 60px;
+      border-radius: 30px;
+      z-index: 1000;
+      animation: popIn 0.3s ease-out;
+      text-align: center;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+
+    .feedback.correct {
+      background: #4CAF50;
+      color: white;
+    }
+
+    .feedback.incorrect {
+      background: #f44336;
+      color: white;
+    }
+
+    .feedback.complete {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      font-size: 3em;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .restart-btn {
+      background: white;
+      color: #667eea;
+      border: none;
+      padding: 15px 40px;
+      font-size: 0.5em;
+      font-weight: bold;
+      border-radius: 15px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      transition: all 0.3s ease;
+      font-family: 'Comic Sans MS', 'Chalkboard SE', 'Arial Rounded MT Bold', cursive, sans-serif;
+    }
+
+    .restart-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    }
+
+    @keyframes popIn {
+      0% {
+        transform: translate(-50%, -50%) scale(0);
+      }
+      50% {
+        transform: translate(-50%, -50%) scale(1.1);
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
+
+    .firework {
+      position: fixed;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      z-index: 999;
+      pointer-events: none;
+      box-shadow: 0 0 10px currentColor;
+    }
+
+    @keyframes explode {
+      0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(var(--tx), var(--ty)) scale(0);
+        opacity: 0;
+      }
+    }
+
+    .star-burst {
+      position: fixed;
+      z-index: 999;
+      pointer-events: none;
+      font-size: 3em;
+      animation: starBurst 1.5s ease-out forwards;
+      filter: drop-shadow(0 0 10px currentColor);
+    }
+
+    @keyframes starBurst {
+      0% {
+        transform: translate(0, 0) scale(0) rotate(0deg);
+        opacity: 1;
+      }
+      50% {
+        transform: translate(var(--tx), var(--ty)) scale(1.5) rotate(180deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(var(--tx), var(--ty)) scale(0.5) rotate(360deg);
+        opacity: 0;
+      }
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body>
+  <main class="game-container">
+   <h1 id="gameTitle">Nối Hình Nghề Nghiệp</h1>
+   <p class="instruction" id="instructionText">Hãy nối mỗi nghề nghiệp với đồ dùng phù hợp nhé!</p>
+   <div class="game-board" id="gameBoard">
+    <svg class="connection-svg" id="connectionSvg"></svg>
+    <div class="column" id="jobsColumn">
+     <div class="card" data-id="doctor" data-type="job">
+      <div class="card-image"><img src="https://tapchidongy.net/wp-content/uploads/2024/04/pk-nhi-bs-Tuan.jpg" alt="Bác sỹ">
+      </div>
+      <div class="card-label">
+       Bác sỹ
+      </div>
+     </div>
+     <div class="card" data-id="farmer" data-type="job">
+      <div class="card-image"><img src="https://media.dolenglish.vn/PUBLIC/MEDIA/fc54d78f-6a46-4667-9742-c5e4e5f83f40.jpg" alt="Nông dân">
+      </div>
+      <div class="card-label">
+       Nông dân
+      </div>
+     </div>
+     <div class="card" data-id="chef" data-type="job">
+      <div class="card-image"><img src="https://tomimarkets.net/wp-content/uploads/2020/05/Dau-bep-goc-Viet-Duong-Huy-Khai.jpg" alt="Đầu bếp">
+      </div>
+      <div class="card-label">
+       Đầu bếp
+      </div>
+     </div>
+     <div class="card" data-id="pilot" data-type="job">
+      <div class="card-image"><img src="https://spirit.vietnamairlines.com/old/tintuc/NewsDK/11625/1920x1080_T12.1997.jpg" alt="Phi công">
+      </div>
+      <div class="card-label">
+       Phi công
+      </div>
+     </div>
+     <div class="card" data-id="teacher" data-type="job">
+      <div class="card-image"><img src="https://bcp.cdnchinhphu.vn/334894974524682240/2022/10/7/z377332976878018daf5dd8d27bdc6d0f61f78e77a5cce-16651408855351088776738.jpg" alt="Giáo viên">
+      </div>
+      <div class="card-label">
+       Giáo viên
+      </div>
+     </div>
+    </div>
+    <div class="column" id="toolsColumn">
+     <div class="card" data-id="stethoscope" data-match="doctor">
+      <div class="card-image"><img src="https://medhome.vn/wp-content/uploads/2021/05/Tong-the-ong-nghe-Littmann-Classic-III-5620.jpg" alt="Ống nghe">
+      </div>
+      <div class="card-label">
+       Ống nghe
+      </div>
+     </div>
+     <div class="card" data-id="rice" data-match="farmer">
+      <div class="card-image"><img src="https://d4.violet.vn/uploads/blogs/447/chantrau_500.jpg" alt="Cây lúa">
+      </div>
+      <div class="card-label">
+       Cây lúa
+      </div>
+     </div>
+     <div class="card" data-id="pan" data-match="chef">
+      <div class="card-image"><img src="https://bigshop.vn/media/lib/noi-xong-bigshop.jpg" alt="Nồi chảo">
+      </div>
+      <div class="card-label">
+       Nồi chảo
+      </div>
+     </div>
+     <div class="card" data-id="plane" data-match="pilot">
+      <div class="card-image"><img src="https://osky.1cdn.vn/2025/04/12/18.jpeg" alt="Máy bay">
+      </div>
+      <div class="card-label">
+       Máy bay
+      </div>
+     </div>
+     <div class="card" data-id="books" data-match="teacher">
+      <div class="card-image"><img src="https://phuhieuhocsinh.com/wp-content/uploads/2024/07/do-dung-do-choi-tu-lam-cua-giao-vien-mam-nonYLJpt-780x410.webp" alt="Sách vở">
+      </div>
+      <div class="card-label">
+       Sách vở
+      </div>
+     </div>
+    </div>
+   </div>
+  </main>
+  <script>
+    const defaultConfig = {
+      game_title: "Nối Hình Nghề Nghiệp",
+      instruction_text: "Hãy nối mỗi nghề nghiệp với đồ dùng phù hợp nhé!",
+      primary_color: "#667eea"
+    };
+
+    let selectedJob = null;
+    let matchedPairs = 0;
+    const totalPairs = 5;
+    const connections = [];
+
+    function shuffleColumn(columnId) {
+      const column = document.getElementById(columnId);
+      const cards = Array.from(column.children);
+      
+      // Fisher-Yates shuffle
+      for (let i = cards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        column.appendChild(cards[j]);
+      }
+    }
+
+    function setupGameListeners() {
+      const jobCards = document.querySelectorAll('[data-type="job"]');
+      const toolCards = document.querySelectorAll('[data-match]');
+
+      jobCards.forEach(card => {
+        card.onclick = function() {
+          if (card.classList.contains('matched')) return;
+          
+          jobCards.forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+          selectedJob = card.dataset.id;
+        };
+      });
+
+      toolCards.forEach(card => {
+        card.onclick = function() {
+          if (card.classList.contains('matched') || !selectedJob) return;
+          
+          const expectedMatch = card.dataset.match;
+          
+          if (selectedJob === expectedMatch) {
+            handleCorrectMatch(selectedJob, card);
+          } else {
+            handleIncorrectMatch();
+          }
+        };
+      });
+    }
+
+    function onConfigChange(config) {
+      document.getElementById('gameTitle').textContent = config.game_title || defaultConfig.game_title;
+      document.getElementById('instructionText').textContent = config.instruction_text || defaultConfig.instruction_text;
+      
+      const primaryColor = config.primary_color || defaultConfig.primary_color;
+      document.body.style.background = `linear-gradient(135deg, ${primaryColor} 0%, #764ba2 100%)`;
+    }
+
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities: (config) => ({
+          recolorables: [
+            {
+              get: () => config.primary_color || defaultConfig.primary_color,
+              set: (value) => {
+                config.primary_color = value;
+                window.elementSdk.setConfig({ primary_color: value });
+              }
+            }
+          ],
+          borderables: [],
+          fontEditable: undefined,
+          fontSizeable: undefined
+        }),
+        mapToEditPanelValues: (config) => new Map([
+          ["game_title", config.game_title || defaultConfig.game_title],
+          ["instruction_text", config.instruction_text || defaultConfig.instruction_text]
+        ])
+      });
+    }
+
+    function handleCorrectMatch(jobId, toolCard) {
+      const jobCard = document.querySelector(`[data-id="${jobId}"]`);
+      
+      jobCard.classList.add('matched');
+      jobCard.classList.remove('selected');
+      toolCard.classList.add('matched');
+      
+      drawConnection(jobCard, toolCard);
+      
+      showFeedback('correct');
+      createFireworks();
+      
+      matchedPairs++;
+      selectedJob = null;
+      
+      if (matchedPairs === totalPairs) {
+        setTimeout(() => {
+          showFeedback('complete');
+          createFireworks();
+        }, 500);
+      }
+    }
+
+    function handleIncorrectMatch() {
+      showFeedback('incorrect');
+      
+      const jobCards = document.querySelectorAll('[data-type="job"]');
+      jobCards.forEach(c => c.classList.remove('selected'));
+      selectedJob = null;
+    }
+
+    function drawConnection(jobCard, toolCard) {
+      const svg = document.getElementById('connectionSvg');
+      const gameBoard = document.querySelector('.game-board');
+      
+      const jobRect = jobCard.getBoundingClientRect();
+      const toolRect = toolCard.getBoundingClientRect();
+      const boardRect = gameBoard.getBoundingClientRect();
+      
+      const x1 = jobRect.right - boardRect.left;
+      const y1 = jobRect.top + jobRect.height / 2 - boardRect.top;
+      const x2 = toolRect.left - boardRect.left;
+      const y2 = toolRect.top + toolRect.height / 2 - boardRect.top;
+      
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', x1);
+      line.setAttribute('y1', y1);
+      line.setAttribute('x2', x2);
+      line.setAttribute('y2', y2);
+      line.setAttribute('class', 'connection-line');
+      
+      svg.appendChild(line);
+      connections.push(line);
+    }
+
+    function showFeedback(type) {
+      const feedback = document.createElement('div');
+      feedback.className = `feedback ${type}`;
+      
+      if (type === 'correct') {
+        feedback.textContent = 'ĐÚNG RỒI! ✨';
+        document.body.appendChild(feedback);
+        setTimeout(() => {
+          feedback.remove();
+        }, 2000);
+      } else if (type === 'incorrect') {
+        feedback.textContent = 'SAI RỒI! 😅';
+        document.body.appendChild(feedback);
+        setTimeout(() => {
+          feedback.remove();
+        }, 2000);
+      } else if (type === 'complete') {
+        const message = document.createElement('div');
+        message.textContent = '🎉 CHÚC MỪNG BÉ ĐÃ HOÀN THÀNH! 🎊';
+        feedback.appendChild(message);
+        
+        const restartBtn = document.createElement('button');
+        restartBtn.className = 'restart-btn';
+        restartBtn.textContent = '🔄 Chơi Lại';
+        restartBtn.onclick = function() {
+          restartGame();
+        };
+        feedback.appendChild(restartBtn);
+        
+        document.body.appendChild(feedback);
+      }
+    }
+
+    function restartGame() {
+      const feedback = document.querySelector('.feedback.complete');
+      if (feedback) {
+        feedback.remove();
+      }
+      
+      selectedJob = null;
+      matchedPairs = 0;
+      connections.length = 0;
+      
+      const svg = document.getElementById('connectionSvg');
+      svg.innerHTML = '';
+      
+      const allCards = document.querySelectorAll('.card');
+      allCards.forEach(card => {
+        card.classList.remove('matched', 'selected');
+      });
+      
+      shuffleColumn('jobsColumn');
+      shuffleColumn('toolsColumn');
+    }
+
+    function createFireworks() {
+      const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ff6b6b', '#4ecdc4', '#45b7d1', '#ffa07a'];
+      const fireworkCount = 50;
+      const stars = ['⭐', '✨', '💫', '🌟'];
+      
+      for (let i = 0; i < fireworkCount; i++) {
+        setTimeout(() => {
+          const firework = document.createElement('div');
+          firework.className = 'firework';
+          firework.style.left = `${Math.random() * 100}%`;
+          firework.style.top = `${Math.random() * 100}%`;
+          const color = colors[Math.floor(Math.random() * colors.length)];
+          firework.style.background = color;
+          
+          const tx = (Math.random() - 0.5) * 600;
+          const ty = (Math.random() - 0.5) * 600;
+          firework.style.setProperty('--tx', `${tx}px`);
+          firework.style.setProperty('--ty', `${ty}px`);
+          
+          firework.style.animation = 'explode 1.5s ease-out forwards';
+          
+          document.body.appendChild(firework);
+          
+          setTimeout(() => firework.remove(), 1500);
+        }, i * 20);
+      }
+      
+      for (let i = 0; i < 15; i++) {
+        setTimeout(() => {
+          const star = document.createElement('div');
+          star.className = 'star-burst';
+          star.textContent = stars[Math.floor(Math.random() * stars.length)];
+          star.style.left = `${Math.random() * 100}%`;
+          star.style.top = `${Math.random() * 100}%`;
+          star.style.color = colors[Math.floor(Math.random() * colors.length)];
+          
+          const tx = (Math.random() - 0.5) * 400;
+          const ty = (Math.random() - 0.5) * 400;
+          star.style.setProperty('--tx', `${tx}px`);
+          star.style.setProperty('--ty', `${ty}px`);
+          
+          document.body.appendChild(star);
+          
+          setTimeout(() => star.remove(), 1500);
+        }, i * 100);
+      }
+    }
+
+    shuffleColumn('jobsColumn');
+    shuffleColumn('toolsColumn');
+    setupGameListeners();
+    onConfigChange(window.elementSdk ? window.elementSdk.config : defaultConfig);
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a9974ccb4a8c3e8',t:'MTc2NDk5OTcwNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
